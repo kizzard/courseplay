@@ -187,7 +187,12 @@ function courseplay:getDistances(object)
 					local tnx, tny, tnz = getWorldTranslation(tempNode);
 					local xdis,ydis,dis = worldToLocal(object.attacherJoint.node, tnx, tny, tnz);
 					local nodeLength = 0;
+					local isPivoted = false;
 					for i = 1, #backTrack do
+						if rotLimits[i][2] > rad(15) then
+							isPivoted = true;
+						end;
+
 						if i == 1 then
 							tempNode = object.attacherJoint.node;
 						else
@@ -201,8 +206,10 @@ function courseplay:getDistances(object)
 						nodeLength = nodeLength + abs(dis);
 					end;
 
-					distances.attacherJointToPivot = nodeLength
-					courseplay:debug(('%s: attacherJointToPivot=%.2f'):format(nameNum(object), distances.attacherJointToPivot), 6);
+					if isPivoted then
+						distances.attacherJointToPivot = nodeLength;
+						courseplay:debug(('%s: attacherJointToPivot=%.2f'):format(nameNum(object), distances.attacherJointToPivot), 6);
+					end;
 				end;
 			end;
 
@@ -370,7 +377,7 @@ function courseplay:getRealTrailerFrontNode(workTool)
 		if jointNode and backtrack and workTool.attacherJoint.jointType ~= AttacherJoints.JOINTTYPE_IMPLEMENT then
 			local rootNode;
 			for _, joint in ipairs(workTool.componentJoints) do
-				if joint.jointNode == jointNode then
+				if joint.jointNode == jointNode and joint.rotLimit[2] > rad(15) then
 					rootNode = workTool.components[joint.componentIndices[2]].node;
 					break;
 				end;
@@ -389,7 +396,9 @@ function courseplay:getRealTrailerFrontNode(workTool)
 
 				workTool.cp.realFrontNode = node;
 			end;
-		else
+		end;
+
+		if not workTool.cp.realFrontNode then
 			if courseplay:getLastComponentNodeWithWheels(workTool) ~= workTool.rootNode then
 				workTool.cp.realFrontNode = courseplay:getRealTurningNode(workTool, workTool.rootNode, "realFrontNode");
 			else
@@ -587,6 +596,11 @@ function courseplay:getRealTurningNode(object, useNode, nodeName)
 				courseplay:debug(('%s: getRealTurningNode(): useNode=%q, nodeName=%q, Distance=%2f'):format(nameNum(object), tostring(useNode ~= nil), tostring(transformGroupName), Distance), 6);
 			end;
 
+			if object.cp.realTurnNodeOffsetZ and type(object.cp.realTurnNodeOffsetZ) == "number" then
+				Distance = Distance + object.cp.realTurnNodeOffsetZ;
+				courseplay:debug(('%s: getRealTurningNode(): Special turn node offset set: realTurnNodeOffsetZ=%2f, New Distance=%2f'):format(nameNum(object), object.cp.realTurnNodeOffsetZ, Distance), 6);
+			end;
+
 			if Distance ~= 0 then
 				setTranslation(node, 0, 0, Distance);
 			end;
@@ -628,8 +642,8 @@ function courseplay:getPivotJointNode(workTool)
 			-- Check if we are in the right component.
 			if component.node == componentNode then
 				for jointIndex, joint in ipairs(workTool.componentJoints) do
-					-- Check if we have the right componentJoint
-					if joint.componentIndices[2] == index then
+					-- Check if we have the right componentJoint and if it's an pivot joint
+					if joint.componentIndices[2] == index and joint.rotLimit[2] > rad(15) then
 						-- Set the joint index and stop the loop.
 						workTool.cp.jointNode = workTool.componentJoints[jointIndex].jointNode;
 						break;
@@ -770,14 +784,18 @@ function courseplay:getToolTurnRadius(workTool)
 		local type			= "Tool";
 		local TR			= 0;
 		local frontLength	= 0;
-
+		--attacherJointOrPivotToTurningNode
 		local attacherVehicle			= workTool.attacherVehicle;
+		local workToolDistances			= workTool.cp.distances or courseplay:getDistances(workTool);
 
 		for i, attachedImplement in pairs(attacherVehicle.attachedImplements) do
 			if attachedImplement.object == workTool then
 				-- Check if AIVehicleUtil can calculate it for us
-				local AIMaxToolRadius = AIVehicleUtil.getMaxToolRadius(attachedImplement);
+				local AIMaxToolRadius = AIVehicleUtil.getMaxToolRadius(attachedImplement) * 0.5;
 				if AIMaxToolRadius > 0 then
+					if workToolDistances.attacherJointOrPivotToTurningNode > AIMaxToolRadius then
+						AIMaxToolRadius = workToolDistances.attacherJointOrPivotToTurningNode;
+					end;
 					courseplay:debug(('%s -> TurnRadius: AIVehicleUtil.getMaxToolRadius=%.2fm'):format(nameNum(workTool), AIMaxToolRadius), 6);
 					return AIMaxToolRadius;
 				end;
@@ -789,7 +807,6 @@ function courseplay:getToolTurnRadius(workTool)
 		end;
 
 		local attacherVehicleDistances	= attacherVehicle.cp.distances or courseplay:getDistances(attacherVehicle);
-		local workToolDistances			= workTool.cp.distances or courseplay:getDistances(workTool);
 
 		if deg(rotMax) >= 30 and deg(rotMax) < 90 then
 			-- We have turningNodeToRearTrailerAttacherJoints value
@@ -851,8 +868,7 @@ function courseplay:getToolTurnRadius(workTool)
 						TR = courseplay:calculateTurnRadius(type, wheelBase, pivotRotMax, CPRatio);
 
 					-- If pivotRotMax is not greater than 15 degrees,
-					-- then giants have fucked up and we cant get the real pivotRotMax value.
-					-- We will then use half of the length from attacherJoint to turningNode as the turnRadius instead.
+					-- we will then use half of the length from attacherJoint to turningNode as the turnRadius instead.
 					else
 						TR = ceil((workToolDistances.attacherJointToPivot + workToolDistances.attacherJointOrPivotToTurningNode) / 2 * radiusMultiplier);
 					end;
@@ -860,19 +876,27 @@ function courseplay:getToolTurnRadius(workTool)
 
 				-- We are an pivoted trailer
 				else
-					-- Dolly part
-					wheelBase = frontLength + workToolDistances.attacherJointToPivot;
-					CPRatio = courseplay:getCenterPivotRatio(nil, wheelBase, frontLength);
-					local pivotTR = ceil(courseplay:calculateTurnRadius(type, wheelBase, rotMax, CPRatio) * radiusMultiplier);
+					-- We have a valid pivotRotMax, so calculate it normally.
+					if pivotRotMax > rad(15) then
+						-- Dolly part
+						wheelBase = frontLength + workToolDistances.attacherJointToPivot;
+						CPRatio = courseplay:getCenterPivotRatio(nil, wheelBase, frontLength);
+						local pivotTR = ceil(courseplay:calculateTurnRadius(type, wheelBase, rotMax, CPRatio) * radiusMultiplier);
 
-					-- Trailer part
-					wheelBase = workToolDistances.attacherJointOrPivotToTurningNode;
-					CPRatio = 0;
-					TR = ceil(courseplay:calculateTurnRadius(type, wheelBase, pivotRotMax, CPRatio) * radiusMultiplier);
+						-- Trailer part
+						wheelBase = workToolDistances.attacherJointOrPivotToTurningNode;
+						CPRatio = 0;
+						TR = ceil(courseplay:calculateTurnRadius(type, wheelBase, pivotRotMax, CPRatio) * radiusMultiplier);
 
-					-- Take the highest one
-					if pivotTR > TR then
-						TR = pivotTR;
+						-- Take the highest one
+						if pivotTR > TR then
+							TR = pivotTR;
+						end;
+
+					-- If pivotRotMax is not greater than 15 degrees,
+					-- we will then use half of the length from attacherJoint to turningNode as the turnRadius instead.
+					else
+						TR = ceil((workToolDistances.attacherJointToPivot + workToolDistances.attacherJointOrPivotToTurningNode) / 2 * radiusMultiplier);
 					end;
 					courseplay:debug(('%s -> TurnRadius: turnRadius=%.2fm (Pivot trailer)'):format(nameNum(workTool), TR), 6);
 				end;
@@ -1229,6 +1253,7 @@ function courseplay:setAbortWorkWaypoint(vehicle)
 
 	--- Check for turns
 	for i=vehicle.cp.abortWork,vehicle.cp.previousWaypointIndex do
+		local minNumWPBeforeTurn = 8;
 		local wp = vehicle.Waypoints[i];
 		if wp and wp.turnStart then
 			--- Invert lane offset if abortWork is before previous turn point (symmetric lane change)
@@ -1238,10 +1263,12 @@ function courseplay:setAbortWorkWaypoint(vehicle)
 				vehicle.cp.switchLaneOffset = true;
 			end;
 
-			--- If the turn is less than 3 points ahead of the abortWork waypoint, we set the abortWork further back so we can align better.
-			if vehicle.cp.abortWork + 5 > i then
-				vehicle.cp.abortWork = vehicle.cp.abortWork - 5;
-				vehicle.cp.abortWorkExtraMoveBack = 5;
+			--- If the turn is less than 6 points ahead of the abortWork waypoint, we set the abortWork further back so we can align better.
+			local wpUntilTurn = i - vehicle.cp.abortWork;
+			if wpUntilTurn < minNumWPBeforeTurn then
+				local extraMoveBack = minNumWPBeforeTurn - wpUntilTurn;
+				vehicle.cp.abortWork = vehicle.cp.abortWork - extraMoveBack;
+				vehicle.cp.abortWorkExtraMoveBack = extraMoveBack;
 			end;
 		end;
 	end;

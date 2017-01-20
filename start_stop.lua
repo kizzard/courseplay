@@ -187,6 +187,7 @@ function courseplay:start(self)
 	self.cp.shovelFillEndPoint = nil
 	self.cp.shovelEmptyPoint = nil
 	self.cp.mode9SavedLastFillLevel = 0;
+	self.cp.mode10.alphaList = {}
 	local nearestpoint = dist
 	local recordNumber = 0
 	local curLaneNumber = 1;
@@ -440,6 +441,9 @@ function courseplay:getCanUseCpMode(vehicle)
 
 	if mode == 3 or mode == 8 or mode == 10 then
 		minWait, maxWait = 1, 1;
+		if  vehicle.cp.hasWaterTrailer then
+			maxWait = 10
+		end
 		if vehicle.cp.numWaitPoints < minWait then
 			courseplay:setInfoText(vehicle, string.format("COURSEPLAY_WAITING_POINTS_TOO_FEW;%d",minWait));
 			return false;
@@ -455,9 +459,6 @@ function courseplay:getCanUseCpMode(vehicle)
 		elseif mode == 8 then
 			if vehicle.cp.workTools[1] == nil then
 				courseplay:setInfoText(vehicle, 'COURSEPLAY_WRONG_TRAILER');
-				return false;
-			elseif vehicle.cp.workTools[1].cp.isWaterTrailer and courseplay.triggers.waterReceiversCount == 0 then
-				courseplay:setInfoText(vehicle, 'There are no water triggers on this map'); -- TODO i18n
 				return false;
 			end;
 		end;
@@ -655,6 +656,13 @@ function courseplay:stop(self)
 		courseplay:changeToolOffsetX(self, nil, self.cp.tempToolOffsetX, true);
 		self.cp.tempToolOffsetX = nil
 	end;
+	if self.cp.manualWorkWidth ~= nil then
+		courseplay:changeWorkWidth(self, nil, self.cp.manualWorkWidth, true)
+		if self.cp.hud.currentPage == courseplay.hud.PAGE_COURSE_GENERATION then
+			courseplay.hud:setReloadPageOrder(self, self.cp.hud.currentPage, true);
+		end
+	end
+	
 	self.cp.totalLength, self.cp.totalLengthOffset = 0, 0;
 	self.cp.numWorkTools = 0;
 

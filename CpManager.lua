@@ -103,9 +103,9 @@ function CpManager:loadMap(name)
 	if CpManager.isDeveloper then
 		addConsoleCommand('cpAddMoney', ('Add %s to your bank account'):format(g_i18n:formatMoney(5000000)), 'devAddMoney', self);
 		addConsoleCommand('cpAddFillLevels', 'Add 500\'000 l to all of your silos', 'devAddFillLevels', self);
-		addConsoleCommand('cpStopAll', 'Stop all Courseplayers', 'devStopAll', self);
 	end;
-
+	addConsoleCommand('cpStopAll', 'Stop all Courseplayers', 'devStopAll', self);
+	
 	-- ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 	-- TRIGGERS
 	self.confirmedNoneTipTriggers = {};
@@ -228,7 +228,7 @@ function CpManager:update(dt)
 		if self.startFieldScanAfter > 0 then
 			self.startFieldScanAfter = self.startFieldScanAfter - dt;
 		end;
-		if courseplay.fields.automaticScan and not courseplay.fields.allFieldsScanned and self.startFieldScanAfter <= 0 then
+		if g_currentMission.fieldDefinitionBase and courseplay.fields.automaticScan and not courseplay.fields.allFieldsScanned and self.startFieldScanAfter <= 0 then
 			courseplay.fields:setAllFieldEdges();
 		end;
 
@@ -295,7 +295,7 @@ function CpManager:draw()
 
 	-- ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 	-- DISPLAY FIELD SCAN MSG
-	if courseplay.fields.automaticScan and not courseplay.fields.allFieldsScanned and self.startFieldScanAfter <= 0 then
+	if g_currentMission.fieldDefinitionBase and courseplay.fields.automaticScan and not courseplay.fields.allFieldsScanned and self.startFieldScanAfter <= 0 then
 		self:renderFieldScanInfo();
 	end;
 end;

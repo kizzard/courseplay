@@ -109,15 +109,20 @@ function courseplay:handle_mode4(self, allowedToDrive, workSpeed, refSpeed)
 			self.cp.runOnceStartCourse = false;
 			--turn On                     courseplay:handleSpecialTools(self,workTool,unfold,lower,turnOn,allowedToDrive,cover,unload,ridgeMarker)
 			specialTool, allowedToDrive = courseplay:handleSpecialTools(self,workTool,true,true,true,allowedToDrive,nil,nil, ridgeMarker)
+			local hasSetUnfoldOrderThisLoop = false
 			if allowedToDrive then
 				if not specialTool then
 					--unfold
 					if courseplay:isFoldable(workTool) and workTool:getIsFoldAllowed() and not isFolding and not isUnfolded then -- and ((self.cp.abortWork ~= nil and self.cp.waypointIndex == self.cp.abortWork - 2) or (self.cp.abortWork == nil and self.cp.waypointIndex == 2)) then
 						courseplay:debug(string.format('%s: unfold order (foldDir %d)', nameNum(workTool), workTool.cp.realUnfoldDirection), 17);
 						workTool:setFoldDirection(workTool.cp.realUnfoldDirection);
+						hasSetUnfoldOrderThisLoop = true
 					end;
-					
-					if not isFolding and isUnfolded then
+					if hasSetUnfoldOrderThisLoop then
+						isFolding, isFolded, isUnfolded = courseplay:isFolding(workTool);
+					end
+															--vv  used for foldables, which are not folding before start Strautmann manure spreader 
+					if not isFolding and (isUnfolded or hasSetUnfoldOrderThisLoop) then 
 						--set or stow ridge markers
 						if courseplay:isSowingMachine(workTool) and self.cp.ridgeMarkersAutomatic then
 							if ridgeMarker ~= nil then
@@ -171,9 +176,9 @@ function courseplay:handle_mode4(self, allowedToDrive, workSpeed, refSpeed)
 					local curLaneReal = self.Waypoints[self.cp.waypointIndex].laneNum;
 					if curLaneReal then
 						local intendedDrivingLane = ((curLaneReal-1) % workTool.nSMdrives) + 1;
-						if workTool.currentDrive ~= intendedDrivingLane then
-							courseplay:debug(string.format('%s: currentDrive=%d, curLaneReal=%d -> intendedDrivingLane=%d -> set', nameNum(workTool), workTool.currentDrive, curLaneReal, intendedDrivingLane), 17);
-							workTool.currentDrive = intendedDrivingLane;
+						if workTool.currentLane ~= intendedDrivingLane then
+							courseplay:debug(string.format('%s: currentLane=%d, curLaneReal=%d -> intendedDrivingLane=%d -> set', nameNum(workTool), workTool.currentLane, curLaneReal, intendedDrivingLane), 17);
+							workTool.currentLane = intendedDrivingLane;
 						end;
 					end;
 				end;

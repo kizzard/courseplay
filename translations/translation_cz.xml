@@ -224,6 +224,7 @@
 		<text name="COURSEPLAY_RECORDING_PAUSE_RESUME" 					 text="Pokračovat v nahrávání" />
 		<text name="COURSEPLAY_RECORDING_DELETE" 						 text="Smazat poslední bod" />
 		<text name="COURSEPLAY_RECORDING_SET_WAIT" 						 text="Nastavit bod čekání" />
+		<text name="COURSEPLAY_RECORDING_SET_UNLOAD" 					 text="Set unload point" />
 		<text name="COURSEPLAY_RECORDING_SET_CROSS" 					 text="Nastavit bod křížení" />
 		<text name="COURSEPLAY_RECORDING_TURN_START" 					 text="Začít se otáčet" />
 		<text name="COURSEPLAY_RECORDING_TURN_END" 						 text="Konec otáční" />
@@ -272,6 +273,14 @@
 		<text name="COURSEPLAY_MODE10_NOBLADE"						 	 text="no blade attached" />
 		<text name="COURSEPLAY_MODE10_NOFRONTBLADE"						 text="front mounted blade is not supported" />
 		<text name="COURSEPLAY_MODE10_SETTINGS"						     text="BunkerSilo settings" />
+		<text name="COURSEPLAY_MODE10_BLADE_WIDTH" 					 	 text="blade width" />
+		<text name="COURSEPLAY_MODE10_SILO_LOADEDBY" 					 text="Silo is being filled by" />
+		<text name="COURSEPLAY_MODE10_DRIVINGTHROUGH" 					 text="driving through" />
+		<text name="COURSEPLAY_MODE10_REVERSE_UNLOADING" 			 	 text="reverse unloading" />
+		
+		<text name="COURSEPLAY_FUEL_SEARCH_FOR"						     text="Refill fuel at gas station" />
+		<text name="COURSEPLAY_FUEL_ALWAYS"						         text="always" />
+		<text name="COURSEPLAY_FUEL_BELOW_20PCT"						 text="below 20%" />
 		
 	</texts>
 </l10n>

@@ -187,7 +187,7 @@ function courseplay:updateWorkTools(vehicle, workTool, isImplement)
 	courseplay:setNameVariable(workTool);
 	courseplay:setOwnFillLevelsAndCapacities(workTool,vehicle.cp.mode)
 	local hasWorkTool = false;
-
+	local hasWaterTrailer = false
 	-- MODE 1 + 2: GRAIN TRANSPORT / COMBI MODE
 	if vehicle.cp.mode == 1 or vehicle.cp.mode == 2 then
 		if workTool.allowTipDischarge and workTool.cp.capacity and workTool.cp.capacity > 0.1 then
@@ -222,8 +222,8 @@ function courseplay:updateWorkTools(vehicle, workTool, isImplement)
 
 	-- MODE 5: TRANSFER
 	elseif vehicle.cp.mode == 5 then
-		-- For reverse testing and only for developers!
-		if isImplement and CpManager.isDeveloper then
+		-- For reversing purpose
+		if isImplement then
 			hasWorkTool = true;
 			vehicle.cp.workTools[#vehicle.cp.workTools + 1] = workTool;
 		end;
@@ -275,7 +275,7 @@ function courseplay:updateWorkTools(vehicle, workTool, isImplement)
 			vehicle.cp.hasMachinetoFill = true;
 			workTool.cp.waterReceiverTrigger = nil; -- water trailer: make sure it has no saved unloading water trigger
 		end;
-
+		hasWaterTrailer = workTool.cp.isWaterTrailer
 	-- MODE 9: FILL AND EMPTY SHOVEL
 	elseif vehicle.cp.mode == 9 then
 		if not isImplement and (courseplay:isWheelloader(workTool) or workTool.typeName == 'frontloader' or courseplay:isMixer(workTool)) then
@@ -296,6 +296,8 @@ function courseplay:updateWorkTools(vehicle, workTool, isImplement)
 		end;
 	end;
 
+	vehicle.cp.hasWaterTrailer = hasWaterTrailer
+	
 	if hasWorkTool then
 		courseplay:debug(('%s: workTool %q added to workTools (index %d)'):format(nameNum(vehicle), nameNum(workTool), #vehicle.cp.workTools), 6);
 	end;
@@ -426,6 +428,7 @@ function courseplay:setTipRefOffset(vehicle)
 					end;
 				end;
 			else
+				vehicle.cp.workTools[i].cp.rearTipRefPoint = 1
 				vehicle.cp.tipRefOffset = 0;
 			end;
 		end;
@@ -922,6 +925,10 @@ function courseplay:unload_tippers(vehicle, allowedToDrive)
 
 			-- REGULAR TIPTRIGGER
 			elseif not isBGA then
+				if ctt.isAreaTrigger then
+					trailerInTipRange = g_currentMission.trailerTipTriggers[tipper] ~= nil
+				end
+				
 				goForTipping = trailerInTipRange;
 
 				--AlternativeTipping: don't unload if full
@@ -955,10 +962,12 @@ function courseplay:unload_tippers(vehicle, allowedToDrive)
 							else
 								tipper:toggleTipState(ctt, bestTipReferencePoint);
 							end
-							tipper.cp.isTipping = true;
 							courseplay:debug(nameNum(vehicle)..": toggleTipState: "..tostring(bestTipReferencePoint).."  /unloadingTipper= "..tostring(tipper.name), 2);
-							allowedToDrive = false;
 						end
+					else
+						tipper.cp.isTipping = true;
+						courseplay:debug(nameNum(vehicle)..": set isTipping", 2);
+						allowedToDrive = false;
 					end;
 				else
 					if tipper.tipState ~= Trailer.TIPSTATE_CLOSING then
@@ -1219,3 +1228,35 @@ function courseplay:refillWorkTools(vehicle, driveOn, allowedToDrive, lx, lz, dt
 	return allowedToDrive, lx, lz;
 end;
 
+function courseplay:handleUnloading(vehicle,revUnload)
+	local tipRefpoint = 0
+	local stopForTippping = false
+	for index, tipper in pairs (vehicle.cp.workTools) do
+		local goForTipping = false
+		if revUnload then
+			tipRefpoint = tipper.cp.rearTipRefPoint
+			goForTipping = true
+		else
+			tipRefpoint = tipper.preferedTipReferencePointIndex
+			local _,y,_ = getWorldTranslation(tipper.cp.realUnloadOrFillNode);
+			local _,_,z = worldToLocal(tipper.cp.realUnloadOrFillNode, vehicle.Waypoints[vehicle.cp.previousWaypointIndex].cx, y, vehicle.Waypoints[vehicle.cp.previousWaypointIndex].cz);
+			if z <= 0 and tipper.cp.fillLevel ~= 0 then
+				stopForTippping = true
+				goForTipping = true
+			end					
+		end
+		if (tipper.tipState == Trailer.TIPSTATE_CLOSED or tipper.tipState == Trailer.TIPSTATE_CLOSING) and goForTipping then
+			tipper:toggleTipState(nil, tipRefpoint);
+		elseif (tipper.tipState == Trailer.TIPSTATE_OPEN or tipper.tipState == Trailer.TIPSTATE_OPENING) and tipper.cp.fillLevel == 0 then
+			tipper:toggleTipState(nil, tipRefpoint);
+			if revUnload then
+				courseplay:setWaypointIndex(vehicle, courseplay:getNextFwdPoint(vehicle));
+			end
+			
+		end
+	end
+	if vehicle.cp.totalFillLevel == 0 then
+		courseplay:setVehicleWait(vehicle, false);
+	end
+	return stopForTippping
+end

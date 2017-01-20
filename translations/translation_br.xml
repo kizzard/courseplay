@@ -224,6 +224,7 @@
 		<text name="COURSEPLAY_RECORDING_PAUSE_RESUME" 					 text="Retomar a gravação" />
 		<text name="COURSEPLAY_RECORDING_DELETE" 						 text="Excluir o último ponto" />
 		<text name="COURSEPLAY_RECORDING_SET_WAIT" 						 text="Definir ponto de espera" />
+		<text name="COURSEPLAY_RECORDING_SET_UNLOAD" 					 text="Set unload point" />
 		<text name="COURSEPLAY_RECORDING_SET_CROSS" 					 text="Definir ponto de cruzamento" />
 		<text name="COURSEPLAY_RECORDING_TURN_START" 					 text="Iniciar manobra de giro" />
 		<text name="COURSEPLAY_RECORDING_TURN_END" 						 text="Fim da manobra de giro" />
@@ -272,6 +273,14 @@
 		<text name="COURSEPLAY_MODE10_NOBLADE"						 	 text="nenhuma lâmina conectada" />
 		<text name="COURSEPLAY_MODE10_NOFRONTBLADE"						 text="lâmina frontal não suportada" />
 		<text name="COURSEPLAY_MODE10_SETTINGS"						     text="Configuração do BunkerSilo" />
+		<text name="COURSEPLAY_MODE10_BLADE_WIDTH" 					 	 text="largura da lâmina" />
+		<text name="COURSEPLAY_MODE10_SILO_LOADEDBY" 					 text="Silo sendo preenchido por" />
+		<text name="COURSEPLAY_MODE10_DRIVINGTHROUGH" 					 text="dirigindo através" />
+		<text name="COURSEPLAY_MODE10_REVERSE_UNLOADING" 			 	 text="descarregar de ré" />
+		
+		<text name="COURSEPLAY_FUEL_SEARCH_FOR"						     text="Reabastecer o tanque de combustível" />
+		<text name="COURSEPLAY_FUEL_ALWAYS"						         text="sempre" />
+		<text name="COURSEPLAY_FUEL_BELOW_20PCT"						 text="abaixo de 20%" />
 		
 	</texts>
 </l10n>

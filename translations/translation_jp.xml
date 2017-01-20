@@ -224,6 +224,7 @@
 		<text name="COURSEPLAY_RECORDING_PAUSE_RESUME" 					 text="レコーディングを再開" />
 		<text name="COURSEPLAY_RECORDING_DELETE" 						 text="最後のウエイポイントを削除" />
 		<text name="COURSEPLAY_RECORDING_SET_WAIT" 						 text="待機ポイントを設定" />
+		<text name="COURSEPLAY_RECORDING_SET_UNLOAD" 					 text="Set unload point" />
 		<text name="COURSEPLAY_RECORDING_SET_CROSS" 					 text="クロスポイントを設定" />
 		<text name="COURSEPLAY_RECORDING_TURN_START" 					 text="ターン動作を開始" />
 		<text name="COURSEPLAY_RECORDING_TURN_END" 						 text="ターン動作を終了" />
@@ -272,6 +273,14 @@
 		<text name="COURSEPLAY_MODE10_NOBLADE"						 	 text="ブレードが付いていません" />
 		<text name="COURSEPLAY_MODE10_NOFRONTBLADE"						 text="フロントマウントブレードはサポートされていません" />
 		<text name="COURSEPLAY_MODE10_SETTINGS"						     text="バンカーサイロ設定" />
+		<text name="COURSEPLAY_MODE10_BLADE_WIDTH" 					 	 text="ブレードの幅" />
+		<text name="COURSEPLAY_MODE10_SILO_LOADEDBY" 					 text="トレーラーアンロード" />
+		<text name="COURSEPLAY_MODE10_DRIVINGTHROUGH" 					 text="通過" />
+		<text name="COURSEPLAY_MODE10_REVERSE_UNLOADING" 			 	 text="リバース" />
+		
+		<text name="COURSEPLAY_FUEL_SEARCH_FOR"						     text="ガソリンスタンドで給油する" />
+		<text name="COURSEPLAY_FUEL_ALWAYS"						         text="常時" />
+		<text name="COURSEPLAY_FUEL_BELOW_20PCT"						 text="20%以下" />
 		
 	</texts>
 </l10n>

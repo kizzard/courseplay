@@ -324,6 +324,7 @@ function courseplay.hud:setup()
 		recordingStop      = {  76,360, 108,328 };
 		recordingTurn      = {   4,360,  36,328 };
 		recordingWait      = {  40,180,  72,148 };
+		recordingUnload	   = {   4,431,  36,399 };
 		refresh            = { 220,252, 252,220 };
 		save               = { 220,180, 252,148 };
 		search             = {   4,288,  36,256 };
@@ -993,6 +994,14 @@ function courseplay.hud:loadPage(vehicle, page)
 			end;			
 		end;
 
+		vehicle.cp.hud.content.pages[6][7][1].text = courseplay:loc('COURSEPLAY_FUEL_SEARCH_FOR');
+		if vehicle.cp.allwaysSearchFuel then
+			vehicle.cp.hud.content.pages[6][7][2].text = courseplay:loc('COURSEPLAY_FUEL_ALWAYS');
+		else
+			vehicle.cp.hud.content.pages[6][7][2].text = courseplay:loc('COURSEPLAY_FUEL_BELOW_20PCT');
+		end
+		
+		
 		-- Debug channels
 		vehicle.cp.hud.content.pages[6][8][1].text = courseplay:loc('COURSEPLAY_DEBUG_CHANNELS');
 
@@ -1122,7 +1131,7 @@ function courseplay.hud:loadPage(vehicle, page)
 		vehicle.cp.hud.content.pages[10][1][1].text = courseplay:loc('COURSEPLAY_MODE10_MODE');
 		vehicle.cp.hud.content.pages[10][2][1].text = courseplay:loc('COURSEPLAY_MODE10_SEARCH_MODE');
 		vehicle.cp.hud.content.pages[10][3][1].text = courseplay:loc('COURSEPLAY_MODE10_SEARCHRADIUS');
-		vehicle.cp.hud.content.pages[10][4][1].text = courseplay:loc('COURSEPLAY_WORK_WIDTH');
+		vehicle.cp.hud.content.pages[10][4][1].text = courseplay:loc('COURSEPLAY_MODE10_BLADE_WIDTH');
 		vehicle.cp.hud.content.pages[10][5][1].text = courseplay:loc('COURSEPLAY_MODE10_MAX_BUNKERSPEED');
 		
 		vehicle.cp.hud.content.pages[10][3][2].text = ('%i%s'):format(vehicle.cp.mode10.searchRadius, courseplay:loc('COURSEPLAY_UNIT_METER'));
@@ -1139,7 +1148,13 @@ function courseplay.hud:loadPage(vehicle, page)
 			else
 				vehicle.cp.hud.content.pages[10][6][2].text = ('%.1f%s'):format(vehicle.cp.mode10.shieldHeight, courseplay:loc('COURSEPLAY_UNIT_METER'));
 			end
-			vehicle.cp.hud.content.pages[10][1][2].text = "WIP: "..courseplay:loc('COURSEPLAY_MODE10_MODE_LEVELING');
+			vehicle.cp.hud.content.pages[10][1][2].text = courseplay:loc('COURSEPLAY_MODE10_MODE_LEVELING');
+			vehicle.cp.hud.content.pages[10][7][1].text = courseplay:loc('COURSEPLAY_MODE10_SILO_LOADEDBY');
+			if vehicle.cp.mode10.drivingThroughtLoading then
+				vehicle.cp.hud.content.pages[10][7][2].text = courseplay:loc('COURSEPLAY_MODE10_DRIVINGTHROUGH');
+			else
+				vehicle.cp.hud.content.pages[10][7][2].text = courseplay:loc('COURSEPLAY_MODE10_REVERSE_UNLOADING');
+			end
 		else
 			vehicle.cp.hud.content.pages[10][1][2].text = courseplay:loc('COURSEPLAY_MODE10_MODE_BUILDUP');
 		end
@@ -1398,10 +1413,11 @@ function courseplay.hud:setupVehicleHud(vehicle)
 		[2] = { 'recordingPause',	 'setRecordingPause',		 true, 'COURSEPLAY_RECORDING_PAUSE'			   },
 		[3] = { 'recordingDelete',	 'delete_waypoint',			 nil,  'COURSEPLAY_RECORDING_DELETE'		   },
 		[4] = { 'recordingWait',	 'set_waitpoint',			 nil,  'COURSEPLAY_RECORDING_SET_WAIT'		   },
-		[5] = { 'recordingCross',	 'set_crossing',			 nil,  'COURSEPLAY_RECORDING_SET_CROSS'		   },
-		[6] = { 'recordingTurn',	 'setRecordingTurnManeuver', true, 'COURSEPLAY_RECORDING_TURN_START'	   },
-		[7] = { 'recordingReverse',	 'change_DriveDirection',	 true, 'COURSEPLAY_RECORDING_REVERSE_START'	   },
-		[8] = { 'recordingAddSplit', 'addSplitRecordingPoints',	 nil,  'COURSEPLAY_RECORDING_ADD_SPLIT_POINTS' }
+		[5] = { 'recordingUnload',	 'set_unloadPoint',			 nil,  'COURSEPLAY_RECORDING_SET_UNLOAD'	   },
+		[6] = { 'recordingCross',	 'set_crossing',			 nil,  'COURSEPLAY_RECORDING_SET_CROSS'		   },
+		[7] = { 'recordingTurn',	 'setRecordingTurnManeuver', true, 'COURSEPLAY_RECORDING_TURN_START'	   },
+		[8] = { 'recordingReverse',	 'change_DriveDirection',	 true, 'COURSEPLAY_RECORDING_REVERSE_START'	   },
+		[9] = { 'recordingAddSplit', 'addSplitRecordingPoints',	 nil,  'COURSEPLAY_RECORDING_ADD_SPLIT_POINTS' }
 	};
 	local totalWidth = (#recordingData - 1) * (wBig + marginBig) + wBig;
 	local baseX = self.baseCenterPosX - totalWidth * 0.5;
@@ -1581,6 +1597,8 @@ function courseplay.hud:setupVehicleHud(vehicle)
 	if CpManager.ingameMapIconActive and CpManager.ingameMapIconShowTextLoaded then
 		courseplay.button:new(vehicle, pg, nil, 'toggleIngameMapIconShowText', nil, self.contentMinX, self.linesPosY[6], self.contentMaxWidth, self.lineHeight, 6, nil, true);
 	end;
+	
+	courseplay.button:new(vehicle, pg, nil, 'toggleAutoRefuel', nil,  self.contentMinX, self.linesPosY[7], self.contentMaxWidth, self.lineHeight, 7, nil, true);
 
 	-- debug channels
 	vehicle.cp.hud.debugChannelButtons = {};
@@ -1709,6 +1727,8 @@ function courseplay.hud:setupVehicleHud(vehicle)
 	courseplay.button:new(vehicle, 10, { 'iconSprite.png', 'navMinus' }, 'changeShieldHeight', -0.1, self.buttonPosX[2], self.linesButtonPosY[6], wSmall, hSmall, 6, -0.5, false);
 	courseplay.button:new(vehicle, 10, { 'iconSprite.png', 'navPlus' },  'changeShieldHeight',  0.1, self.buttonPosX[1], self.linesButtonPosY[6], wSmall, hSmall, 6,  0.5, false);
 	courseplay.button:new(vehicle, 10, nil, 'changeShieldHeight', 0.1, mouseWheelArea.x, self.linesButtonPosY[6], mouseWheelArea.w, mouseWheelArea.h, 6, 0.05, true, true);
+	--line7 driveThroughtLoading
+	courseplay.button:new(vehicle, 10, nil, 'rowButton', 7, self.col1posX, self.linesPosY[7], w, self.lineHeight, 7, nil, true);
 	
 	-- ##################################################
 	-- Status icons

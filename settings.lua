@@ -66,10 +66,16 @@ function courseplay:getCanVehicleUseMode(vehicle, mode)
 	return true;
 end;
 
+function courseplay:toggleAutoRefuel(self)
+	self.cp.allwaysSearchFuel = not self.cp.allwaysSearchFuel 
+end
 function courseplay:toggleMode10automaticSpeed(self)
 	if self.cp.mode10.leveling then
 		self.cp.mode10.automaticSpeed = not self.cp.mode10.automaticSpeed
 	end
+end
+function courseplay:toggleMode10drivingThroughtLoading(self)
+		self.cp.mode10.drivingThroughtLoading = not self.cp.mode10.drivingThroughtLoading
 end
 
 function courseplay:toggleMode10AutomaticHeight(self)
@@ -341,6 +347,16 @@ function courseplay:getCuttingAreaValuesX(object)
 end;
 
 function courseplay:changeWorkWidth(vehicle, changeBy, force, noDraw)
+	local isSetManually = false
+	if force == nil and noDraw == nil then
+		--print("is set manually")
+		isSetManually = true
+	elseif force ~= nil and noDraw ~= nil then
+		--print("is set by script")
+	elseif force ~= nil and noDraw == nil then
+		vehicle.cp.manualWorkWidth = nil
+		--print("is set by calculate button")
+	end
 	if force then
 		vehicle.cp.workWidth = max(courseplay:round(abs(force), 1), 0.1);
 	else
@@ -358,6 +374,9 @@ function courseplay:changeWorkWidth(vehicle, changeBy, force, noDraw)
 			vehicle.cp.workWidth = max(vehicle.cp.workWidth + changeBy, 0.1);
 		end;
 	end;
+	if isSetManually then
+		vehicle.cp.manualWorkWidth = vehicle.cp.workWidth
+	end
 	if not noDraw then
 		courseplay:setCustomTimer(vehicle, 'showWorkWidth', 2);
 	end;
@@ -402,9 +421,7 @@ function courseplay:changeMode10Radius (vehicle, changeBy)
 end
 
 function courseplay:changeShieldHeight (vehicle, changeBy)
-	if vehicle.cp.mode10.leveling and  not vehicle.cp.mode10.automaticHeigth then
-		vehicle.cp.mode10.shieldHeight = Utils.clamp(vehicle.cp.mode10.shieldHeight + changeBy,0,1.2)
-	end
+	vehicle.cp.mode10.shieldHeight = Utils.clamp(vehicle.cp.mode10.shieldHeight + changeBy,0,1.5)
 end
 
 function courseplay:changeDriveOnAtFillLevel(vehicle, changeBy)
@@ -473,14 +490,12 @@ function courseplay:changeReverseSpeed(vehicle, changeBy, force, forceReloadPage
 end
 function courseplay:changeBunkerSpeed(vehicle, changeBy)
 	local upperLimit = 20 
-	if not vehicle.cp.mode10.automaticSpeed or not vehicle.cp.mode10.leveling then
-		local speed = vehicle.cp.speeds.bunkerSilo;
-		if vehicle.cp.mode10.leveling then
-			upperLimit = 15
-		end
-		speed = Utils.clamp(speed + changeBy, 3, upperLimit);
-		vehicle.cp.speeds.bunkerSilo = speed;
+	local speed = vehicle.cp.speeds.bunkerSilo;
+	if vehicle.cp.mode10.leveling then
+		upperLimit = 15
 	end
+	speed = Utils.clamp(speed + changeBy, 3, upperLimit);
+	vehicle.cp.speeds.bunkerSilo = speed;
 end
 
 function courseplay:toggleUseRecordingSpeed(vehicle)
@@ -1519,6 +1534,9 @@ end;
 
 -- INGAME MAP ICONS
 function courseplay:createMapHotspot(vehicle)
+	if vehicle.cp.mode == courseplay.MODE_COMBINE_SELF_UNLOADING then
+		return
+	end
 	local name = '';
 	if CpManager.ingameMapIconShowText then
 		if CpManager.ingameMapIconShowName then

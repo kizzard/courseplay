@@ -40,7 +40,7 @@ function courseplay:setNameVariable(workTool)
 		elseif spec == WaterTrailer		   then workTool.cp.hasSpecializationWaterTrailer		 = true;
 		elseif spec == Windrower 		   then workTool.cp.hasSpecializationWindrower 			 = true;
 		elseif spec == Leveler 		   		then workTool.cp.hasSpecializationLeveler 			 = true;
-			
+		elseif spec == Overloading 		   then workTool.cp.hasSpecializationOverloader			 = true;	
 		end;
 	end;
 
@@ -123,15 +123,17 @@ function courseplay:setNameVariable(workTool)
 	-- workTool.cp.steeringAngleCorrection:			(Angle in degrees)		Overwrite the default steering angle if set. NOTE: steeringAngleMultiplier will have no effect if this is set.
 	-- workTool.cp.steeringAngleMultiplier:			(Number)				Used if vehicle needs to turn faster or slower.
 	--																		2 	= turns 2 times slower.																	
-	--																		0.5 = turns 2 times slower.
+	--																		0.5 = turns 2 times faster.
 	-- workTool.cp.componentNumAsDirectionNode:		(Component Index)		Used to set another component as the Direction Node. Starts from index 1 as the first component.
 	-- workTool.cp.haveInvertedToolNode:			(Boolean)				Set to true if the tool have it's rootnode pointing in the wrong direction
-	-- workTool.cp.directionNodeZOffset:			(Distance in meters)	If set, then the Direction Node will be offset by the value set.
+	-- workTool.cp.directionNodeZOffset:			(Distance in meters)	If set, then the Direction Node will be offset by the value set. (Only useable for steerables)
 	-- workTool.cp.widthWillCollideOnTurn:			(Boolean)				If set, then the vehicle will reverse(if possible) further back, before turning to make room for the width of the tool
 	-- workTool.cp.notToBeReversed:					(Boolean)				Tools that should not be reversed with.
 	-- workTool.cp.overwriteTurnRadius:         	(Radius in meters)		Overwrite the default turn radius calculation and uses the value specified.
 	--																		Note: Tractors turn radius also takes into account, so if the tractors turn radius is higher than the tool, then it will use that one instead.
 	-- workTool.cp.implementWheelAlwaysOnGround:	(Boolean)				Implements that have the topReferenceNode set, but still have the wheels on the ground all the time.
+	-- workTool.cp.realTurnNodeOffsetZ:				(Distance in meters)	If real turning node is not calculated corectly, we can add an manual offset z to it.
+	--																		Positive value, moves it forward, Negative value moves it backwards.
 	-- TODO: Add description for all the special varialbes that is usable here.
 	-- ###########################################################
 
@@ -306,6 +308,10 @@ function courseplay:setNameVariable(workTool)
 		workTool.cp.showDirectionNode = true; -- Only for debug mode 12
 
 	-- CULTIVATORS [Giants]
+	-- Horsch Tiger 10 LT [Giants]
+	elseif workTool.cp.xmlFileName == 'horschTiger10LT.xml' then
+		workTool.cp.realTurnNodeOffsetZ = -2.231;
+		workTool.cp.overwriteTurnRadius = 6;
 
 	-- PLOUGHS [Giants]
 	-- Amazone Cayron 200 [Giants]

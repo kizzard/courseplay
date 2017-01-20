@@ -197,6 +197,28 @@ function courseplay.button:render()
 				canScrollUp   = true;
 				canScrollDown = vehicle.cp.workWidth > 0.1;
 			end;
+			
+		elseif pg == courseplay.hud.PAGE_SHOVEL_POSITIONS then
+			if fn == "changeWorkWidth" then
+				canScrollUp   = true;
+				canScrollDown = vehicle.cp.workWidth > 0.1;
+			end
+			
+		elseif pg == courseplay.hud.PAGE_BUNKERSILO_SETTINGS then
+			if fn == "changeMode10Radius" then
+				canScrollUp   = true;
+				canScrollDown = vehicle.cp.mode10.searchRadius > 1;				
+			elseif fn == "changeShieldHeight" then
+				canScrollUp   = not vehicle.cp.mode10.automaticHeigth and vehicle.cp.mode10.shieldHeight < 1.5
+				canScrollDown = not vehicle.cp.mode10.automaticHeigth and vehicle.cp.mode10.shieldHeight > 0
+			elseif fn == "changeBunkerSpeed" then
+				local uMayUseIt = (vehicle.cp.mode10.leveling and not vehicle.cp.mode10.automaticSpeed) or not vehicle.cp.mode10.leveling
+				canScrollUp   = uMayUseIt and vehicle.cp.speeds.bunkerSilo < 20;
+				canScrollDown = uMayUseIt and vehicle.cp.speeds.bunkerSilo > 3;
+			elseif fn == "changeWorkWidth" then
+				canScrollUp   = true;
+				canScrollDown = vehicle.cp.workWidth > 0.1;
+			end
 		end;
 
 		if canScrollUp ~= nil then
@@ -230,7 +252,7 @@ function courseplay.button:render()
 					end;
 				elseif fn == 'toggleFindFirstWaypoint' then
 					show = vehicle.cp.canDrive and not vehicle:getIsCourseplayDriving() and not vehicle.cp.isRecording and not vehicle.cp.recordingIsPaused;
-				elseif fn == 'stop_record' or fn == 'setRecordingPause' or fn == 'delete_waypoint' or fn == 'set_waitpoint' or fn == 'set_crossing' or fn == 'setRecordingTurnManeuver' or fn == 'change_DriveDirection' or fn == 'addSplitRecordingPoints' then
+				elseif fn == 'stop_record' or fn == 'setRecordingPause' or fn == 'delete_waypoint' or fn == 'set_waitpoint' or   fn == 'set_unloadPoint' or  fn == 'set_crossing' or fn == 'setRecordingTurnManeuver' or fn == 'change_DriveDirection' or fn == 'addSplitRecordingPoints' then
 					show = vehicle.cp.isRecording or vehicle.cp.recordingIsPaused;
 				elseif fn == 'clearCurrentLoadedCourse' then
 					show = vehicle.cp.canDrive and not vehicle.cp.isDriving;
@@ -848,6 +870,6 @@ function courseplay.buttons:setActiveEnabled(vehicle, section)
 				button:setDisabled(not vehicle.cp.hasShovelStatePositions[button.parameter]);
 			end;
 		end;
-	end;
+	end;	
 end;
 

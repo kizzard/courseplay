@@ -41,6 +41,7 @@ function courseplay:load(savegame)
 		self.cp.mode7makeHeaps = false
 		self.cp.driverPriorityUseFillLevel = false;
 	end
+	self.cp.speedDebugLine = "no speed info"
 	self.cp.stopWhenUnloading = false;
 
 	-- GIANT DLC
@@ -133,6 +134,7 @@ function courseplay:load(savegame)
 	self.cp.hasPlough = false;
 	self.cp.hasRotateablePlough = false;
 	self.cp.isNotAllowedToDrive = false;
+	self.cp.allwaysSearchFuel = true
 	
 	self.cp.startAtPoint = courseplay.START_AT_NEAREST_POINT;
 
@@ -168,7 +170,8 @@ function courseplay:load(savegame)
 	self.cp.mode10.lastTargetLine = 99
 	self.cp.mode10.deadline = nil
 	self.cp.mode10.firstLine = 0
-	
+	self.cp.mode10.bladeOffset = 0
+	self.cp.mode10.drivingThroughtLoading = false
 	
 	-- Visual i3D waypoint signs
 	self.cp.signs = {
@@ -531,7 +534,7 @@ function courseplay:draw()
 	end;
 	--DEBUG Speed Setting
 	if courseplay.debugChannels[21] then
-		renderText(0.2, 0.105, 0.02, string.format("mode%d rn: %d",self.cp.mode,self.cp.waypointIndex));
+		renderText(0.2, 0.105, 0.02, string.format("mode%d waypointIndex: %d",self.cp.mode,self.cp.waypointIndex));
 		renderText(0.2, 0.075, 0.02, self.cp.speedDebugLine);
 		if self.cp.speedDebugStreet then
 			local mode = "max"
@@ -548,10 +551,7 @@ function courseplay:draw()
 		end	
 		if (self.cp.mode == 2 or self.cp.mode ==3) and self.cp.activeCombine ~= nil then
 			local combine = self.cp.activeCombine	
-			renderText(0.2,0.255,0.02,string.format("combine.lastSpeedReal: %.6f ",combine.lastSpeedReal*3600))
-			renderText(0.2,0.225,0.02,"combine.turnStage: "..combine.turnStage)
-			renderText(0.2,0.195,0.02,"combine.cp.turnStage: "..combine.cp.turnStage)
-			renderText(0.2,0.165,0.02,"combine.acTurnStage: "..combine.acTurnStage)
+			renderText(0.2,0.165,0.02,string.format("combine.lastSpeedReal: %.6f ",combine.lastSpeedReal*3600))
 			renderText(0.2,0.135,0.02,"combineIsTurning: "..tostring(self.cp.mode2DebugTurning ))
 		end	
 	end
@@ -563,7 +563,16 @@ function courseplay:draw()
 		local wx,wz = fillUnit.wx,fillUnit.wz
 		local bx,bz = fillUnit.bx,fillUnit.bz
 		local hx,hz = fillUnit.hx +(fillUnit.wx-fillUnit.sx) ,fillUnit.hz +(fillUnit.wz-fillUnit.sz)
-		local y = getTerrainHeightAtWorldPos(g_currentMission.terrainRootNode, sx, 1, sz)+0.5;
+		local y = 0
+		if self.cp.mode10.leveling then
+			if self.cp.mode10.automaticHeigth then
+				y = getTerrainHeightAtWorldPos(g_currentMission.terrainRootNode, sx, 1, sz)+ fillUnit.height;
+			else
+				y = getTerrainHeightAtWorldPos(g_currentMission.terrainRootNode, sx, 1, sz) + self.cp.mode10.shieldHeight + self.cp.tractorHeight ;
+			end
+		else
+			y = getTerrainHeightAtWorldPos(g_currentMission.terrainRootNode, sx, 1, sz) + 0.5;
+		end
 		drawDebugLine(sx, y, sz, 1, 0, 0, wx, y, wz, 1, 0, 0);
 		drawDebugLine(wx, y, wz, 1, 0, 0, hx, y, hz, 1, 0, 0);
 		drawDebugLine(fillUnit.hx, y, fillUnit.hz, 1, 0, 0, sx, y, sz, 1, 0, 0);
@@ -576,19 +585,22 @@ function courseplay:draw()
 				renderText(0.2,0.165,0.02,"triesTheSameFillUnit: "..tostring(self.cp.mode9triesTheSameFillUnit))
 			end
 		elseif self.cp.mode == 10 then
-			local x,y,z = getWorldTranslation(self.cp.workTools[1].rootNode);
-			local ty = getTerrainHeightAtWorldPos(g_currentMission.terrainRootNode, x, 1, z);
-			local height = y-ty
-			renderText(0.2,0.285,0.02,"numStoppedCPs: "..tostring(#self.cp.mode10.stoppedCourseplayers ))
-			renderText(0.2,0.255,0.02,"height: "..tostring(height))
-			renderText(0.2,0.225,0.02,"shieldHeight: "..tostring(self.cp.mode10.shieldHeight))
-			renderText(0.2,0.195,0.02,"lowestAlpha: "..tostring(self.cp.mode10.lowestAlpha))
-			renderText(0.2,0.165,0.02,"speeds.bunkerSilo: "..tostring(self.cp.speeds.bunkerSilo))
-			renderText(0.2,0.135,0.02,"jumpsPerRun: "..tostring(self.cp.mode10.jumpsPerRun))
-			renderText(0.2,0.105,0.02,"targetHeigth: "..tostring(self.cp.mode10.targetHeigth))
+
+			renderText(0.2,0.395,0.02,"numStoppedCPs: "..tostring(#self.cp.mode10.stoppedCourseplayers ))
+			renderText(0.2,0.365,0.02,"shieldHeight: "..tostring(self.cp.mode10.shieldHeight))
+			renderText(0.2,0.335,0.02,"lowestAlpha: "..tostring(self.cp.mode10.lowestAlpha))
+			renderText(0.2,0.305,0.02,"speeds.bunkerSilo: "..tostring(self.cp.speeds.bunkerSilo))
+			renderText(0.2,0.275,0.02,"jumpsPerRun: "..tostring(self.cp.mode10.jumpsPerRun))
+			renderText(0.2,0.245,0.02,"bladeOffset: "..tostring(self.cp.mode10.bladeOffset))
+			renderText(0.2,0.215,0.02,"diffY: "..tostring(self.cp.diffY ))
+			renderText(0.2,0.195,0.02,"tractorHeight: "..tostring(self.cp.tractorHeight ))
+			renderText(0.2,0.165,0.02,"shouldBHeight: "..tostring(self.cp.shouldBHeight ))
+			renderText(0.2,0.135,0.02,"targetHeigth: "..tostring(self.cp.mode10.targetHeigth))
+			renderText(0.2,0.105,0.02,"height: "..tostring(self.cp.currentHeigth))
 		end
 	end
 
+	
 	--DEBUG SHOW DIRECTIONNODE
 	if courseplay.debugChannels[12] then
 		-- For debugging when setting the directionNodeZOffset. (Visual points shown for old node)
@@ -1387,16 +1399,24 @@ function courseplay:loadVehicleCPSettings(xmlFile, key, resetVehicles)
 		self.cp.driveOnAtFillLevel 	  = Utils.getNoNil(  getXMLInt(xmlFile, curKey .. '#fillDriveOn'),			 90);
 		self.cp.turnDiameter		  = Utils.getNoNil(  getXMLInt(xmlFile, curKey .. '#turnDiameter'),			 self.cp.vehicleTurnRadius * 2);
 		self.cp.realisticDriving 	  = Utils.getNoNil( getXMLBool(xmlFile, curKey .. '#realisticDriving'),		 true);
-
+		self.cp.allwaysSearchFuel 	  = Utils.getNoNil( getXMLBool(xmlFile, curKey .. '#allwaysSearchFuel'),	 true);
+		
 		-- MODES 4 / 6
 		curKey = key .. '.courseplay.fieldWork';
 		self.cp.turnOnField  		  = Utils.getNoNil( getXMLBool(xmlFile, curKey .. '#turnOnField'), 			 true);
 		self.cp.workWidth 			  = Utils.getNoNil(getXMLFloat(xmlFile, curKey .. '#workWidth'),			 3);
 		self.cp.ridgeMarkersAutomatic = Utils.getNoNil( getXMLBool(xmlFile, curKey .. '#ridgeMarkersAutomatic'), true);
 		self.cp.abortWork 			  = Utils.getNoNil(  getXMLInt(xmlFile, curKey .. '#abortWork'),			 0);
+		self.cp.manualWorkWidth		  = Utils.getNoNil(getXMLFloat(xmlFile, curKey .. '#manualWorkWidth'),	     0);
 		if self.cp.abortWork 		  == 0 then
 			self.cp.abortWork = nil;
 		end;
+		if self.cp.manualWorkWidth ~= 0 then
+			self.cp.workWidth = self.cp.manualWorkWidth
+		else
+			self.cp.manualWorkWidth = nil
+		end	
+		
 		self.cp.refillUntilPct = Utils.getNoNil(getXMLInt(xmlFile, curKey .. '#refillUntilPct'), 100);
 		local offsetData = Utils.getNoNil(getXMLString(xmlFile, curKey .. '#offsetData'), '0;0;0;false'); -- 1=laneOffset, 2=toolOffsetX, 3=toolOffsetZ, 4=symmetricalLaneChange
 		offsetData = Utils.splitString(';', offsetData);
@@ -1462,10 +1482,9 @@ function courseplay:loadVehicleCPSettings(xmlFile, key, resetVehicles)
 		self.cp.mode10.searchCourseplayersOnly = Utils.getNoNil( getXMLBool(xmlFile, curKey .. '#CourseplayersOnly'), true);
 		self.cp.mode10.searchRadius = Utils.getNoNil( getXMLInt(xmlFile, curKey .. '#searchRadius'), 50);
 		self.cp.speeds.bunkerSilo = Utils.getNoNil( getXMLInt(xmlFile, curKey .. '#maxSiloSpeed'), 20);
-		self.cp.mode10.shieldHeight = Utils.getNoNil( getXMLFloat(xmlFile, curKey .. '#shieldHeigth'), 0.3);
-		self.cp.mode10.shieldHeight = courseplay:round(self.cp.mode10.shieldHeight,1)
+		self.cp.mode10.shieldHeight = Utils.getNoNil( getXMLFloat(xmlFile, curKey .. '#shieldHeight'), 0.3);
 		self.cp.mode10.automaticSpeed =  Utils.getNoNil( getXMLBool(xmlFile, curKey .. '#automaticSpeed'), true);
-		self.cp.mode10.automaticHeigth = Utils.getNoNil( getXMLFloat(xmlFile, curKey .. '#automaticHeight'), true);
+		self.cp.mode10.automaticHeigth = Utils.getNoNil( getXMLBool(xmlFile, curKey .. '#automaticHeight'), true);
 		
 		courseplay:validateCanSwitchMode(self);
 	end;
@@ -1528,8 +1547,8 @@ function courseplay:getSaveAttributesAndNodes(nodeIdent)
 	local cpOpen = string.format('<courseplay aiMode=%q courses=%q openHudWithMouse=%q lights=%q visualWaypointsStartEnd=%q visualWaypointsAll=%q visualWaypointsCrossing=%q waitTime=%q siloSelectedFillType=%q>', tostring(self.cp.mode), tostring(table.concat(self.cp.loadedCourses, ",")), tostring(self.cp.hud.openWithMouse), tostring(self.cp.warningLightsMode), tostring(self.cp.visualWaypointsStartEnd), tostring(self.cp.visualWaypointsAll), tostring(self.cp.visualWaypointsCrossing), tostring(self.cp.waitTime), FillUtil.fillTypeIntToName[self.cp.siloSelectedFillType]);
 	--local cpOpen = string.format('<courseplay aiMode=%q courses=%q openHudWithMouse=%q lights=%q visualWaypointsStartEnd=%q visualWaypointsAll=%q visualWaypointsCrossing=%q waitTime=%q >', tostring(self.cp.mode), tostring(table.concat(self.cp.loadedCourses, ",")), tostring(self.cp.hud.openWithMouse), tostring(self.cp.warningLightsMode), tostring(self.cp.visualWaypointsStartEnd), tostring(self.cp.visualWaypointsAll), tostring(self.cp.visualWaypointsCrossing), tostring(self.cp.waitTime));
 	local speeds = string.format('<speeds useRecordingSpeed=%q reverse="%d" turn="%d" field="%d" max="%d" />', tostring(self.cp.speeds.useRecordingSpeed), self.cp.speeds.reverse, self.cp.speeds.turn, self.cp.speeds.field, self.cp.speeds.street);
-	local combi = string.format('<combi tipperOffset="%.1f" combineOffset="%.1f" combineOffsetAutoMode=%q fillFollow="%d" fillDriveOn="%d" turnDiameter="%d" realisticDriving=%q />', self.cp.tipperOffset, self.cp.combineOffset, tostring(self.cp.combineOffsetAutoMode), self.cp.followAtFillLevel, self.cp.driveOnAtFillLevel, self.cp.turnDiameter, tostring(self.cp.realisticDriving));
-	local fieldWork = string.format('<fieldWork workWidth="%.1f" ridgeMarkersAutomatic=%q offsetData=%q abortWork="%d" refillUntilPct="%d" turnOnField=%q />', self.cp.workWidth, tostring(self.cp.ridgeMarkersAutomatic), offsetData, Utils.getNoNil(self.cp.abortWork, 0), self.cp.refillUntilPct, tostring(self.cp.turnOnField));
+	local combi = string.format('<combi tipperOffset="%.1f" combineOffset="%.1f" combineOffsetAutoMode=%q fillFollow="%d" fillDriveOn="%d" turnDiameter="%d" realisticDriving=%q allwaysSearchFuel=%q />', self.cp.tipperOffset, self.cp.combineOffset, tostring(self.cp.combineOffsetAutoMode), self.cp.followAtFillLevel, self.cp.driveOnAtFillLevel, self.cp.turnDiameter, tostring(self.cp.realisticDriving),tostring(self.cp.allwaysSearchFuel));
+	local fieldWork = string.format('<fieldWork workWidth="%.1f" ridgeMarkersAutomatic=%q offsetData=%q abortWork="%d" refillUntilPct="%d" turnOnField=%q manualWorkWidth="%.1f" />', self.cp.workWidth, tostring(self.cp.ridgeMarkersAutomatic), offsetData, Utils.getNoNil(self.cp.abortWork, 0), self.cp.refillUntilPct, tostring(self.cp.turnOnField),Utils.getNoNil(self.cp.manualWorkWidth,0));
 	local mode10 = string.format('<mode10 leveling=%q  CourseplayersOnly=%q searchRadius="%i" maxSiloSpeed="%i" shieldHeight="%.1f" automaticSpeed=%q  automaticHeight=%q />', tostring(self.cp.mode10.leveling), tostring(self.cp.mode10.searchCourseplayersOnly), self.cp.mode10.searchRadius, self.cp.speeds.bunkerSilo, self.cp.mode10.shieldHeight, tostring(self.cp.mode10.automaticSpeed),tostring(self.cp.mode10.automaticHeigth));
 	local shovels, combine = '', '';
 	if shovelRotsAttrNodes or shovelTransAttrNodes then
